@@ -38,9 +38,9 @@ cardapio.metodos = {
         $.each(filtro, (i, e) => {
 
             let temp = cardapio.templates.item.replace(/\${img}/g, e.img)
-            .replace(/\${nome}/g, e.name)
-            .replace(/\${preco}/g, e.price.toFixed(2).replace('.', ','))
-            .replace(/\${id}/g, e.id)
+                .replace(/\${nome}/g, e.name)
+                .replace(/\${preco}/g, e.price.toFixed(2).replace('.', ','))
+                .replace(/\${id}/g, e.id)
 
             // botão ver mais foi clicado (12 itens)
             if (vermais && i >= 8 && i < 12) {
@@ -121,8 +121,8 @@ cardapio.metodos = {
                 else {
                     item[0].qntd = qntdAtual;
                     MEU_CARRINHO.push(item[0])
-                }      
-                
+                }
+
                 cardapio.metodos.mensagem('Item adicionado ao carrinho', 'green')
                 $("#qntd-" + id).text(0);
 
@@ -186,7 +186,7 @@ cardapio.metodos = {
             $("#btnEtapaResumo").addClass('hidden');
             $("#btnVoltar").addClass('hidden');
         }
-        
+
         if (etapa == 2) {
             $("#lblTituloEtapa").text('Endereço de entrega:');
             $("#itensCarrinho").addClass('hidden');
@@ -242,10 +242,10 @@ cardapio.metodos = {
             $.each(MEU_CARRINHO, (i, e) => {
 
                 let temp = cardapio.templates.itemCarrinho.replace(/\${img}/g, e.img)
-                .replace(/\${nome}/g, e.name)
-                .replace(/\${preco}/g, e.price.toFixed(2).replace('.', ','))
-                .replace(/\${id}/g, e.id)
-                .replace(/\${qntd}/g, e.qntd)
+                    .replace(/\${nome}/g, e.name)
+                    .replace(/\${preco}/g, e.price.toFixed(2).replace('.', ','))
+                    .replace(/\${id}/g, e.id)
+                    .replace(/\${qntd}/g, e.qntd)
 
                 $("#itensCarrinho").append(temp);
 
@@ -296,7 +296,7 @@ cardapio.metodos = {
 
         // atualiza o botão carrinho com a quantidade atualizada
         cardapio.metodos.atualizarBadgeTotal();
-        
+
     },
 
     // atualiza o carrinho com a quantidade atual
@@ -329,7 +329,7 @@ cardapio.metodos = {
             if ((i + 1) == MEU_CARRINHO.length) {
                 $("#lblSubTotal").text(`R$ ${VALOR_CARRINHO.toFixed(2).replace('.', ',')}`);
                 $("#lblValorEntrega").text(`+ R$ ${VALOR_ENTREGA.toFixed(2).replace('.', ',')}`);
-                $("#lblValorTotal").text(`R$ ${(VALOR_CARRINHO + VALOR_ENTREGA).toFixed(2).replace('.', ',')}`);
+                $("#lblValorTotal").text(`R$ ${(VALOR_CARRINHO).toFixed(2).replace('.', ',')}`);
             }
 
         })
@@ -342,17 +342,28 @@ cardapio.metodos = {
         if (MEU_CARRINHO.length <= 0) {
             cardapio.metodos.mensagem('Seu carrinho está vazio.')
             return;
-        } 
+        }
 
         cardapio.metodos.carregarEtapa(2);
 
     },
 
-    // validação antes de prosseguir para a etapa 3
+    // Validação antes de prosseguir para a etapa 3
 resumoPedido: () => {
-
     let nome = $("#txtNome").val().trim();
     let numero = $("#txtNumero").val().trim();
+    let cpf = $("#txtCPF").val().trim();
+    let email = $("#txtEmail").val().trim();
+
+    // Função para validar CPF (apenas estrutura básica, pode ser aprimorada)
+    const validarCPF = (cpf) => {
+        return /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(cpf);
+    };
+
+    // Função para validar e-mail
+    const validarEmail = (email) => {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    };
 
     if (nome.length <= 0) {
         cardapio.metodos.mensagem('Informe o Nome, por favor.');
@@ -361,23 +372,37 @@ resumoPedido: () => {
     }
 
     if (numero.length <= 0) {
-        cardapio.metodos.mensagem('Informe o Número, por favor.');
+        cardapio.metodos.mensagem('Informe o Número de Telefone, por favor.');
         $("#txtNumero").focus();
         return;
     }
 
+    if (cpf.length <= 0 || !validarCPF(cpf)) {
+        cardapio.metodos.mensagem('Informe um CPF válido (000.000.000-00).');
+        $("#txtCPF").focus();
+        return;
+    }
+
+    if (email.length <= 0 || !validarEmail(email)) {
+        cardapio.metodos.mensagem('Informe um e-mail válido.');
+        $("#txtEmail").focus();
+        return;
+    }
+
+    // Armazena os dados no objeto MEU_ENDERECO
     MEU_ENDERECO = {
         nome: nome,
-        numero: numero
+        numero: numero,
+        cpf: cpf,
+        email: email
     };
 
     cardapio.metodos.carregarEtapa(3);
     cardapio.metodos.carregarResumo();
 },
 
-// carrega a etapa de Resumo do pedido
+// Carrega a etapa de Resumo do pedido
 carregarResumo: () => {
-
     $("#listaItensResumo").html('');
 
     $.each(MEU_CARRINHO, (i, e) => {
@@ -389,43 +414,97 @@ carregarResumo: () => {
         $("#listaItensResumo").append(temp);
     });
 
-    $("#resumoEndereco").html(`${MEU_ENDERECO.nome}, ${MEU_ENDERECO.numero}`);
+    // Exibe os dados do cliente no resumo
+    $("#resumoEndereco").html(`
+        <strong>Nome:</strong> ${MEU_ENDERECO.nome} <br>
+        <strong>Telefone:</strong> ${MEU_ENDERECO.numero} <br>
+        <strong>CPF:</strong> ${MEU_ENDERECO.cpf} <br>
+        <strong>E-mail:</strong> ${MEU_ENDERECO.email}
+    `);
 
-    cardapio.metodos.finalizarPedido();
+    cardapio.metodos.pagamentoPedido();
 },
 
-// Atualiza o link do botão do WhatsApp
-finalizarPedido: () => {
 
+pagamentoPedido: async () => {
     if (MEU_CARRINHO.length > 0 && MEU_ENDERECO != null) {
-
-        var texto = 'Olá! gostaria de fazer um pedido:';
-        texto += `\n*Itens do pedido:*\n\n\${itens}`;
-        texto += '\n*Dados do cliente:*';
-        texto += `\nNome: ${MEU_ENDERECO.nome}`;
-        texto += `\nNúmero: ${MEU_ENDERECO.numero}`;
-        texto += `\n\n*Total (com entrega): R$ ${(VALOR_CARRINHO + VALOR_ENTREGA).toFixed(2).replace('.', ',')}*`;
-
-        var itens = '';
-
-        $.each(MEU_CARRINHO, (i, e) => {
-            itens += `*${e.qntd}x* ${e.name} ....... R$ ${e.price.toFixed(2).replace('.', ',')} \n`;
-
-            // último item
-            if ((i + 1) == MEU_CARRINHO.length) {
-
-                texto = texto.replace(/\${itens}/g, itens);
-
-                // converte a URL
-                let encode = encodeURI(texto);
-                let URL = `https://wa.me/${CELULAR_EMPRESA}?text=${encode}`;
-
-                $("#btnEtapaResumo").attr('href', URL);
-            }
+      try {
+        // Montar os produtos do pedido
+        const produtos = MEU_CARRINHO.map(item => ({
+          externalId: item.id || "prod-default",
+          name: item.name,
+          quantity: item.qntd,
+          price: Math.round(item.price * 100), // em centavos
+          description: item.description || "Produto sem descrição"
+        }));
+  
+        // Criar o objeto de pagamento
+        const pagamentoData = {
+          frequency: "ONE_TIME",
+          methods: ["PIX"],
+          returnUrl: "https://www.abacatepay.com/app",
+          completionUrl: "https://www.abacatepay.com/app",
+          customer: {
+            name: MEU_ENDERECO.nome,
+            cellphone: MEU_ENDERECO.numero.replace(/\D/g, ''),
+            email: MEU_ENDERECO.email,
+            taxId: MEU_ENDERECO.cpf.replace(/\D/g, '')
+          },
+          products: produtos
+        };
+  
+        // 1. Salvar os dados no banco de dados
+        const salvarResponse = await fetch('http://127.0.0.1:3333/Salvarbilling', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(pagamentoData)
         });
-
+  
+        const salvarData = await salvarResponse.json();
+        console.log("Resposta do Salvarbilling:", salvarData);
+  
+        if (salvarData.error) {
+          alert("Erro ao salvar os dados do pagamento: " + salvarData.error);
+          return;
+        }
+  
+        // 2. Criar o pagamento e obter a URL
+        const billingResponse = await fetch('http://127.0.0.1:3333/billing', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer abc_dev_3wSPcZAFcfEtzagLHG4zbAFj' // Substitua com seu token real
+          },
+          body: JSON.stringify(pagamentoData)
+        });
+  
+        const billingData = await billingResponse.json();
+        console.log("Resposta do Billing:", billingData);
+  
+        if (billingData.error) {
+          alert("Erro ao criar pagamento: " + billingData.error);
+          return;
+        }
+  
+        // Redirecionar para a URL de pagamento
+        if (billingData.data && billingData.data.url) {
+          window.location.href = billingData.data.url;
+        } else {
+          alert("Erro: URL de pagamento não recebida.");
+        }
+  
+      } catch (error) {
+        console.error("Erro ao processar pagamento:", error);
+        alert("Erro ao processar pagamento. Tente novamente.");
+      }
+    } else {
+      alert("Adicione itens ao carrinho e preencha os campos antes de finalizar o pedido.");
     }
-},
+  },  
+  
+
 
     // carrega o link do botão reserva
     carregarBotaoReserva: () => {
